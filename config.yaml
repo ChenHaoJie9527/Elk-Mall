@@ -1,0 +1,4 @@
+app:
+  name: elk-mall
+server:
+  port: 8080
