@@ -8,6 +8,6 @@ import (
 )
 
 // Ping 健康检查接口
-func Ping(e echo.Context) error {
-	return e.JSON(http.StatusOK, response.Success("pong"))
+func Ping(c *echo.Context) error {
+	return c.JSON(http.StatusOK, response.Success("pong"))
 }
