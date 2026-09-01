@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
+	"github.com/labstack/echo/v5"
 )
 
 func main() {
@@ -14,4 +16,12 @@ func main() {
 	}
 
 	fmt.Printf("配置文件加载成功: %+v\n", cfg)
+
+	e := echo.New()
+	router.Register(e)
+
+	if err := e.Start(":" + cfg.Server.Port); err != nil {
+		log.Fatal("start server: ", err)
+	}
+
 }
