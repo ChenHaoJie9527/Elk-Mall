@@ -1,4 +1,4 @@
-package middleware
+package response
 
 import (
 	"encoding/json"
@@ -9,11 +9,9 @@ import (
 	"testing"
 
 	errno "github.com/ChenHaoJie9527/Elk-Mall/internal/common/Errno"
-	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/labstack/echo/v5"
 )
 
-// 构造一次请求用的 Echo Context 和响应记录器
 func newCtx() (*echo.Context, *httptest.ResponseRecorder) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -21,21 +19,18 @@ func newCtx() (*echo.Context, *httptest.ResponseRecorder) {
 	return e.NewContext(req, rec), rec
 }
 
-func decodeBody(t *testing.T, rec *httptest.ResponseRecorder) response.Response {
+func decodeBody(t *testing.T, rec *httptest.ResponseRecorder) Response {
 	t.Helper()
-	var body response.Response
-	// 解析响应体并复制到 body 中
+	var body Response
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("unmarshal %q: %v", rec.Body.String(), err)
 	}
 	return body
 }
 
-// 测试已提交响应，则直接返回
 func TestHTTPErrorHandler_CommittedResponseNotOverwritten(t *testing.T) {
 	c, rec := newCtx()
-	// 先提交一次
-	if err := c.JSON(http.StatusOK, response.Success("already")); err != nil {
+	if err := c.JSON(http.StatusOK, Success("already")); err != nil {
 		t.Fatalf("seed json: %v", err)
 	}
 	HTTPErrorHandler(c, errno.ParmError)
@@ -49,7 +44,6 @@ func TestHTTPErrorHandler_CommittedResponseNotOverwritten(t *testing.T) {
 	}
 }
 
-// 测试业务错误走errno，返回json响应
 func TestHTTPErrorHandler_Errno(t *testing.T) {
 	tests := []struct {
 		name string
@@ -86,7 +80,6 @@ func TestHTTPErrorHandler_Errno(t *testing.T) {
 	}
 }
 
-// 测试其他错误走 http 状态码，返回json响应
 func TestHTTPErrorHandler_HTTPStatus(t *testing.T) {
 	tests := []struct {
 		name   string
