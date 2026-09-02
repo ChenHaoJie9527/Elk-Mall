@@ -8,6 +8,7 @@ type Errno struct {
 
 func (e *Errno) Error() string { return e.Msg }
 
+// WithMsg 返回一个带有自定义消息的 Errno
 func (e *Errno) WithMsg(msg string) *Errno {
 	return &Errno{
 		Code: e.Code,
@@ -15,6 +16,7 @@ func (e *Errno) WithMsg(msg string) *Errno {
 	}
 }
 
+// 定义常用的 Errno
 var (
 	OK          = &Errno{Code: 0, Msg: "OK"}
 	ParmError   = &Errno{Code: 10001, Msg: "参数错误"}
