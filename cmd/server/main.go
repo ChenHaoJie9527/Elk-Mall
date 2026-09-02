@@ -7,6 +7,7 @@ import (
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
@@ -24,6 +25,19 @@ func main() {
 	e.HTTPErrorHandler = response.HTTPErrorHandler
 	// 挂载 恢复中间件
 	e.Use(middleware.Recover())
+
+	// 挂载 请求 ID 中间件
+	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		// 自定义请求 ID 生成器
+		Generator: func() string {
+			uuid, err := uuid.NewV7()
+			if err != nil {
+				return ""
+			}
+			return uuid.String()
+		},
+	}))
+
 	// 挂载 路由
 	router.Register(e)
 	// 启动服务
