@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
@@ -30,11 +32,37 @@ func main() {
 	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
 		// 自定义请求 ID 生成器
 		Generator: func() string {
-			uuid, err := uuid.NewV7()
-			if err != nil {
-				return ""
+			return uuid.Must(uuid.NewV7()).String()
+		},
+	}))
+
+	// 使用 slog 记录日志：使用 JSON 格式化器，输出到标准输出
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	// 挂载 日志中间件
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus:    true, // 记录响应状态码
+		LogURI:       true, // 记录请求 URI
+		LogMethod:    true, // 记录请求方法
+		HandleError:  true, // 把错误传递给 LogValuesFunc 处理
+		LogRequestID: true, // 记录请求 ID
+		LogLatency:   true, // 记录请求耗时
+		// 自定义日志记录函数
+		LogValuesFunc: func(c *echo.Context, v middleware.RequestLoggerValues) error {
+			// 记录 正常 请求日志: 记录请求 URI、响应状态码、请求方法
+			if v.Error == nil {
+				logger.LogAttrs(c.Request().Context(), slog.LevelInfo, "REQUEST",
+					slog.String("request_id", v.RequestID),
+					slog.String("uri", v.URI),
+					slog.String("method", v.Method),
+					slog.Int("status", v.Status),
+				)
+			} else {
+				// 记录 错误 日志: 记录请求 URI、响应状态码、错误信息
+				logger.LogAttrs(c.Request().Context(), slog.LevelError, "REQUEST_ERROR", slog.String("uri", v.URI),
+					slog.Int("status", v.Status), slog.String("error", v.Error.Error()), slog.String("request_id", v.RequestID))
 			}
-			return uuid.String()
+			return nil
 		},
 	}))
 
