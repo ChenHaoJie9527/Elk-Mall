@@ -6,6 +6,6 @@ import (
 )
 
 // Register 注册路由
-func Register(e *echo.Echo) {
-	e.GET("/ping", controller.Ping)
+func Register(e *echo.Echo, h *controller.Health) {
+	e.GET("/ping", h.Ping)
 }

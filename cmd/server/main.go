@@ -9,6 +9,7 @@ import (
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/adaptor"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/controller"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
@@ -75,7 +76,7 @@ func main() {
 	}))
 
 	// 挂载 路由
-	router.Register(e)
+	router.Register(e, &controller.Health{MySQL: db})
 	// 启动服务
 	if err := e.Start(":" + cfg.Server.Port); err != nil {
 		log.Fatal("start server: ", err)
