@@ -20,6 +20,11 @@ services:
       interval: 10s # 检查间隔时间
       timeout: 5s # 超时时间
       retries: 5 # 重试次数
+  redis:
+    image: redis:7
+    container_name: elk-mall-redis
+    ports:
+      - "6380:6379"
 
 volumes:
   mysql_data:
