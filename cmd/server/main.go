@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/adaptor"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
@@ -21,6 +22,13 @@ func main() {
 	}
 
 	fmt.Printf("配置文件加载成功: %+v\n", cfg)
+
+	db, err := adaptor.OpenMySql(cfg.MySQL)
+	if err != nil {
+		log.Fatalf("连接 MySQL 失败: %v", err)
+	}
+
+	defer db.Close()
 
 	e := echo.New()
 	// 挂载 自定义的全局错误处理函数
