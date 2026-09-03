@@ -1,0 +1,25 @@
+services:
+  mysql:
+    image: mysql:8.0 # 镜像
+    container_name: elk-mall-mysql # 容器名称
+    restart: always # 自动重启
+    environment:
+      MYSQL_ROOT_PASSWORD: root # 根密码
+      MYSQL_DATABASE: elk_mall # 数据库名称
+      MYSQL_USER: elk
+      MYSQL_PASSWORD: elk
+    ports:
+      - 3308:3306 # 端口映射
+    volumes:
+      - mysql_data:/var/lib/mysql # 数据卷
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s # 检查间隔时间
+      timeout: 5s # 超时时间
+      retries: 5 # 重试次数
+
+volumes:
+  mysql_data:
