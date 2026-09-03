@@ -11,6 +11,17 @@ import (
 type Config struct {
 	App    AppConfig
 	Server AppServer
+	MySQL  MySQLConfig
+}
+
+type MySQLConfig struct {
+	Host         string
+	Port         string
+	User         string
+	Password     string
+	Database     string
+	MaxOpenConns int `mapstructure:"max_open_conns"`
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
 }
 
 // AppConfig 应用配置
@@ -35,6 +46,10 @@ func Load(path string) (*Config, error) {
 	vi.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	// 自动加载环境变量
 	vi.AutomaticEnv()
+
+	// 设置默认值，如果配置文件中没有设置，则使用默认值
+	vi.SetDefault("mysql.max_open_conns", 10)
+	vi.SetDefault("mysql.max_idle_conns", 5)
 
 	// 读取配置文件
 	if err := vi.ReadInConfig(); err != nil {
