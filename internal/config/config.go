@@ -58,6 +58,10 @@ func Load(path string) (*Config, error) {
 	vi.SetDefault("mysql.max_open_conns", 10)
 	vi.SetDefault("mysql.max_idle_conns", 5)
 
+	vi.SetDefault("redis.addr", "127.0.0.1:6380")
+	vi.SetDefault("redis.password", "")
+	vi.SetDefault("redis.db", 0)
+
 	// 读取配置文件
 	if err := vi.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("读取配置文件失败: %v", err)

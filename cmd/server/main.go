@@ -83,7 +83,7 @@ func main() {
 	}))
 
 	// 挂载 路由
-	router.Register(e, &controller.Health{MySQL: db})
+	router.Register(e, &controller.Health{MySQL: db, Redis: r})
 	// 启动服务
 	if err := e.Start(":" + cfg.Server.Port); err != nil {
 		log.Fatal("start server: ", err)
