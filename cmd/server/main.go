@@ -31,6 +31,13 @@ func main() {
 
 	defer db.Close()
 
+	r, err := adaptor.OpenRedis(cfg.Redis)
+	if err != nil {
+		log.Fatalf("连接 Redis 失败: %v", err)
+	}
+
+	defer r.Close()
+
 	e := echo.New()
 	// 挂载 自定义的全局错误处理函数
 	e.HTTPErrorHandler = response.HTTPErrorHandler
