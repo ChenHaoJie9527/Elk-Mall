@@ -1,6 +1,6 @@
 # Elk-Mall
 
-Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0`。
+Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0`。
 
 ## 已完成功能
 
@@ -29,22 +29,40 @@ Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` 
 - 用 `slog` JSON 输出请求日志，记录 `request_id` / `uri` / `method` / `status`
 - 成功请求打 `REQUEST`，出错打 `REQUEST_ERROR`（含 error 信息）
 
+### v4.0.0 — 数据接入：MySQL / Redis 连接池与探活
+
+- `docker-compose.yml` 提供本地依赖：MySQL 8 映射 `3308:3306`，Redis 8 映射 `6380:6379`（避开宿主机已占用的 3306 / 6379）
+- `config.yaml` 拆字段描述连接（host / port / user / password 等），adaptor 再拼 DSN；带下划线的池参数用 `mapstructure` tag 才能解进结构体
+- `internal/adaptor` 用 `database/sql` + 官方 MySQL 驱动、go-redis 建连接池；启动时 Ping，失败则进程退出、不对外听端口
+- `GET /ping` 注入连接后探测两个依赖，成功返回 `{"mysql":"ok","redis":"ok"}`；不通则走全局错误处理变成 500
+- 本版不建表、不上 GORM、不写 repository；adaptor 只负责连上和探活
+
+本地依赖：
+
+```bash
+docker compose up -d
+```
+
+应用仍在宿主机运行，连 `127.0.0.1:3308` 与 `127.0.0.1:6380`。Navicat 用同一套账号（`elk` / `elk`，端口 3308）**双击打开连接**。`docker compose down` 只拆容器、数据还在；`down -v` 会连数据卷一起删掉。
+
 ## 目录结构
 
 ```
 elk-mall/
-├── cmd/server/main.go          # 入口：读配置、建 Echo、挂中间件、注册路由、启动
+├── cmd/server/main.go          # 入口：读配置、连 MySQL/Redis、建 Echo、挂中间件、注册路由、启动
 ├── internal/
+│   ├── adaptor/                # 数据接入：连接池 + Ping（v4）
 │   ├── config/                 # 配置加载
 │   ├── router/                 # 路由层
 │   ├── controller/             # 控制层（当前仅 health）
 │   ├── service/                # 服务层（后续模块）
-│   ├── repository/             # 数据层（后续）
+│   ├── repository/             # 仓储（后续，写业务数据时再加）
 │   ├── model/                  # DTO / DO（后续）
 │   ├── middleware/             # 自定义中间件（后续）
 │   └── common/
 │       ├── Errno/              # 业务错误码（v2）
 │       └── response/           # 统一响应 + 全局错误处理
+├── docker-compose.yml          # 本地 MySQL / Redis
 ├── config.yaml
 └── go.mod
 ```
