@@ -12,6 +12,13 @@ type Config struct {
 	App    AppConfig
 	Server AppServer
 	MySQL  MySQLConfig
+	Redis  RedisConfig
+}
+
+type RedisConfig struct {
+	Addr     string
+	Password string
+	DB       int
 }
 
 type MySQLConfig struct {

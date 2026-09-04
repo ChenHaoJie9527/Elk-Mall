@@ -1,3 +1,5 @@
+name: elk-mall-compose
+
 services:
   mysql:
     image: mysql:8.0 # 镜像
@@ -21,7 +23,7 @@ services:
       timeout: 5s # 超时时间
       retries: 5 # 重试次数
   redis:
-    image: redis:7
+    image: redis:8
     container_name: elk-mall-redis
     ports:
       - "6380:6379"
