@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -17,7 +18,8 @@ type Config struct {
 }
 
 type JWTConfig struct {
-	Secret string
+	Secret    string
+	ExpiresIn time.Duration `mapstructure:"expires_in"`
 }
 
 type RedisConfig struct {
@@ -69,6 +71,7 @@ func Load(path string) (*Config, error) {
 
 	// JWT 配置
 	vi.SetDefault("jwt.secret", "elk-mall-dev-jwt-secret")
+	vi.SetDefault("jwt.expires_in", "1h")
 
 	// 读取配置文件
 	if err := vi.ReadInConfig(); err != nil {

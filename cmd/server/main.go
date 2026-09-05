@@ -97,10 +97,10 @@ func main() {
 	}))
 
 	// 挂载 路由
-	health := &controller.Health{MySQL: sqlDB, Redis: r} // 健康检查控制器
-	repo := repository.NewUserRepo(gdb)                  // 用户仓库
-	svc := service.NewUserService(repo, cfg.JWT.Secret)  // 用户服务
-	user := &controller.User{Svc: svc}                   // 用户控制器
+	health := &controller.Health{MySQL: sqlDB, Redis: r}                   // 健康检查控制器
+	repo := repository.NewUserRepo(gdb)                                    // 用户仓库
+	svc := service.NewUserService(repo, cfg.JWT.Secret, cfg.JWT.ExpiresIn) // 用户服务
+	user := &controller.User{Svc: svc}                                     // 用户控制器
 
 	// 注册路由集合: 健康检查、用户路由
 	router.RegisterRouter(e, health, user)
