@@ -103,5 +103,21 @@ func (s *UserService) Login(req *dto.LoginReq) (*dto.LoginResp, error) {
 
 // 根据ID获取用户
 func (s *UserService) GetByID(id uint) (*dto.UserResp, error) {
-	return nil, nil
+	u, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 如果用户不存在，返回用户不存在
+	if u == nil {
+		return nil, errno.UserNotFound
+	}
+
+	// 返回用户信息
+	return &dto.UserResp{
+		ID:       u.ID,
+		Username: u.Username,
+		Nickname: u.Nickname,
+	}, nil
+
 }
