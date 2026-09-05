@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -76,20 +75,10 @@ func (u *User) Login(c *echo.Context) error {
 func (u *User) GetByID(c *echo.Context) error {
 
 	// 从上下文中获取 token
-	// “user”: 指的是 JWT 中间件中设置的上下文键名
-	token, err := echo.ContextGet[*jwt.Token](c, "user")
+	userID, err := currentUserID(c)
 	if err != nil {
-		// 返回 401 错误
-		return echo.ErrUnauthorized.Wrap(err)
+		return err
 	}
-
-	// 断言 token.Claims 为 *pkg.Claims
-	claims, ok := token.Claims.(*pkg.Claims)
-	if !ok {
-		return echo.ErrUnauthorized.Wrap(errors.New("token claims is not *pkg.Claims"))
-	}
-
-	userID := claims.UserID
 
 	id := c.Param("id")
 	if id == "" {
@@ -113,4 +102,31 @@ func (u *User) GetByID(c *echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, response.Success(resp))
+}
+
+// 获取当前用户信息
+// 请求参数: 无
+// 返回参数: user
+func (u *User) Me(c *echo.Context) error {
+	userID, err := currentUserID(c)
+	if err != nil {
+		return err
+	}
+	resp, err := u.Svc.GetByID(userID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, response.Success(resp))
+}
+
+func currentUserID(c *echo.Context) (uint, error) {
+	token, err := echo.ContextGet[*jwt.Token](c, "user")
+	if err != nil {
+		return 0, echo.ErrUnauthorized.Wrap(err)
+	}
+	claims, ok := token.Claims.(*pkg.Claims)
+	if !ok {
+		return 0, echo.ErrUnauthorized
+	}
+	return claims.UserID, nil
 }

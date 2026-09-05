@@ -21,5 +21,6 @@ func RegisterRouter(e *echo.Echo, h *controller.Health, u *controller.User, jwtM
 	// 需要认证的路由组，使用 JWT 中间件
 	auth := e.Group("", jwtMW)
 	// 获取用户信息 需要认证
+	auth.GET("/users/me", u.Me)
 	auth.GET("/users/:id", u.GetByID)
 }
