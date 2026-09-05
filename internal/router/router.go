@@ -14,12 +14,11 @@ func RegisterRouter(e *echo.Echo, h *controller.Health, u *controller.User, jwtM
 	// 健康检查
 	e.GET("/ping", h.Ping)
 
-	// 用户路由 未认证
+	// 公开的路由，不需要认证
 	e.POST("/users/register", u.Register)
 	e.POST("/users/login", u.Login)
-	// e.GET("/users/:id", u.GetByID)
 
-	// 需要认证的路由组
+	// 需要认证的路由组，使用 JWT 中间件
 	auth := e.Group("", jwtMW)
 	// 获取用户信息 需要认证
 	auth.GET("/users/:id", u.GetByID)
