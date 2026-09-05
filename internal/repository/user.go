@@ -64,3 +64,12 @@ func (u *UserRepo) UpdateUser(user *do.UserDO) error {
 func (u *UserRepo) DeleteUser(id uint) error {
 	return u.db.Delete(&do.UserDO{}, id).Error
 }
+
+// 根据用户名查询用户
+func (u *UserRepo) GetByUsername(username string) (*do.UserDO, error) {
+	var user do.UserDO
+	if err := u.db.Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
