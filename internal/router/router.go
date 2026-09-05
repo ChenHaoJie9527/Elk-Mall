@@ -6,12 +6,21 @@ import (
 )
 
 // Register 注册路由
-func RegisterRouter(e *echo.Echo, h *controller.Health, u *controller.User) {
+// e: echo 实例
+// h: 健康检查控制器
+// u: 用户控制器
+// jwtMW: JWT 中间件
+func RegisterRouter(e *echo.Echo, h *controller.Health, u *controller.User, jwtMW echo.MiddlewareFunc) {
 	// 健康检查
 	e.GET("/ping", h.Ping)
 
-	// 用户路由
+	// 用户路由 未认证
 	e.POST("/users/register", u.Register)
 	e.POST("/users/login", u.Login)
-	e.GET("/users/:id", u.GetByID)
+	// e.GET("/users/:id", u.GetByID)
+
+	// 需要认证的路由组
+	auth := e.Group("", jwtMW)
+	// 获取用户信息 需要认证
+	auth.GET("/users/:id", u.GetByID)
 }

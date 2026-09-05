@@ -10,6 +10,7 @@ import (
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/controller"
+	authmw "github.com/ChenHaoJie9527/Elk-Mall/internal/middleware"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/model/do"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/repository"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
@@ -102,8 +103,11 @@ func main() {
 	svc := service.NewUserService(repo, cfg.JWT.Secret, cfg.JWT.ExpiresIn) // 用户服务
 	user := &controller.User{Svc: svc}                                     // 用户控制器
 
+	// 创建 JWT 中间件
+	jwtMW := authmw.JWT([]byte(cfg.JWT.Secret))
+
 	// 注册路由集合: 健康检查、用户路由
-	router.RegisterRouter(e, health, user)
+	router.RegisterRouter(e, health, user, jwtMW)
 
 	// 启动服务
 	if err := e.Start(":" + cfg.Server.Port); err != nil {
