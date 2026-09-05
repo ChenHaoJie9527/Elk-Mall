@@ -13,6 +13,11 @@ type Config struct {
 	Server AppServer
 	MySQL  MySQLConfig
 	Redis  RedisConfig
+	JWT    JWTConfig
+}
+
+type JWTConfig struct {
+	Secret string
 }
 
 type RedisConfig struct {
@@ -61,6 +66,9 @@ func Load(path string) (*Config, error) {
 	vi.SetDefault("redis.addr", "127.0.0.1:6380")
 	vi.SetDefault("redis.password", "")
 	vi.SetDefault("redis.db", 0)
+
+	// JWT 配置
+	vi.SetDefault("jwt.secret", "elk-mall-dev-jwt-secret")
 
 	// 读取配置文件
 	if err := vi.ReadInConfig(); err != nil {
