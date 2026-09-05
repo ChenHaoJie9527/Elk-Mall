@@ -1,6 +1,6 @@
 # Elk-Mall
 
-Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0`。
+Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0` / `v5.0.0`。
 
 ## 已完成功能
 
@@ -37,6 +37,14 @@ Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` 
 - `GET /ping` 注入连接后探测两个依赖，成功返回 `{"mysql":"ok","redis":"ok"}`；不通则走全局错误处理变成 500
 - 本版不建表、不上 GORM、不写 repository；adaptor 只负责连上和探活
 
+### v5.0.0 — 数据模型与仓储：UserDO / UserRepo
+
+- `internal/model/do` 增加 `UserDO`：对照用户表写列和约束（主键、用户名唯一索引、密码/昵称长度、`CreatedAt` / `UpdatedAt`、软删除 `DeletedAt`）
+- DO 只给 GORM 落库用，不加 `json` tag；对外 DTO 本版仍未加
+- `internal/repository` 增加 `UserRepo`，持有 `*gorm.DB`，封装用户存取：`CreateUser` / `GetByID` / `GetList`（`Count` 总条数 + `Offset` / `Limit` 分页）
+- 引入 `gorm.io/gorm`；插入、按主键查、列表都走 GORM 链式调用，错误从 `.Error` 取出
+- 本版不挂用户 HTTP 接口、不改 `main` 接入 GORM、不 `AutoMigrate`；adaptor 仍只负责连上 `database/sql`
+
 本地依赖：
 
 ```bash
@@ -56,8 +64,8 @@ elk-mall/
 │   ├── router/                 # 路由层
 │   ├── controller/             # 控制层（当前仅 health）
 │   ├── service/                # 服务层（后续模块）
-│   ├── repository/             # 仓储（后续，写业务数据时再加）
-│   ├── model/                  # DTO / DO（后续）
+│   ├── repository/             # 仓储：UserRepo 用户 CRUD（v5）
+│   ├── model/do/               # DO：UserDO 表映射（v5）；DTO 后续再加
 │   ├── middleware/             # 自定义中间件（后续）
 │   └── common/
 │       ├── Errno/              # 业务错误码（v2）
