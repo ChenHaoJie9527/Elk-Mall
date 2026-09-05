@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -26,7 +28,8 @@ func NewUserService(repo *repository.UserRepo, jwtSecret string) *UserService {
 func (s *UserService) Register(req *dto.RegisterReq) (*dto.UserResp, error) {
 	// 查询用户是否存在
 	u, err := s.repo.GetByUsername(req.Username)
-	if err != nil {
+	// 如果错误不是记录不存在，返回错误
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
@@ -45,6 +48,7 @@ func (s *UserService) Register(req *dto.RegisterReq) (*dto.UserResp, error) {
 	user := &do.UserDO{
 		Username: req.Username,
 		Password: string(hashedPassword),
+		Nickname: req.Username,
 	}
 
 	if err := s.repo.CreateUser(user); err != nil {
@@ -62,7 +66,7 @@ func (s *UserService) Login(req *dto.LoginReq) (*dto.LoginResp, error) {
 
 	// 查询用户是否存在
 	u, err := s.repo.GetByUsername(req.Username)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 	if u == nil {
@@ -104,7 +108,7 @@ func (s *UserService) Login(req *dto.LoginReq) (*dto.LoginResp, error) {
 // 根据ID获取用户
 func (s *UserService) GetByID(id uint) (*dto.UserResp, error) {
 	u, err := s.repo.GetByID(id)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 

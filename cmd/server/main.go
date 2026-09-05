@@ -11,7 +11,9 @@ import (
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/controller"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/model/do"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/repository"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -95,7 +97,14 @@ func main() {
 	}))
 
 	// 挂载 路由
-	router.Register(e, &controller.Health{MySQL: sqlDB, Redis: r})
+	health := &controller.Health{MySQL: sqlDB, Redis: r} // 健康检查控制器
+	repo := repository.NewUserRepo(gdb)                  // 用户仓库
+	svc := service.NewUserService(repo, cfg.JWT.Secret)  // 用户服务
+	user := &controller.User{Svc: svc}                   // 用户控制器
+
+	// 注册路由集合: 健康检查、用户路由
+	router.RegisterRouter(e, health, user)
+
 	// 启动服务
 	if err := e.Start(":" + cfg.Server.Port); err != nil {
 		log.Fatal("start server: ", err)

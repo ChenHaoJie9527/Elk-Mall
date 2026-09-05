@@ -37,7 +37,7 @@ func (u *User) Register(c *echo.Context) error {
 
 	resp, err := u.Svc.Register(&req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, errno.ServerError)
+		return err
 	}
 
 	return c.JSON(http.StatusOK, response.Success(resp))
@@ -50,7 +50,7 @@ func (u *User) Login(c *echo.Context) error {
 	var req dto.LoginReq
 	// bind: 绑定请求体到 req 中
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, errno.ParmError)
+		return err
 	}
 
 	// 校验 参数: 使用 validator 校验参数
@@ -61,7 +61,7 @@ func (u *User) Login(c *echo.Context) error {
 
 	resp, err := u.Svc.Login(&req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, errno.ServerError)
+		return err
 	}
 
 	return c.JSON(http.StatusOK, response.Success(resp))
@@ -85,7 +85,7 @@ func (u *User) GetByID(c *echo.Context) error {
 	// 获取用户信息
 	resp, err := u.Svc.GetByID(uint(idUint))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, errno.ServerError)
+		return err
 	}
 	return c.JSON(http.StatusOK, response.Success(resp))
 }
