@@ -35,11 +35,16 @@ func TestOpenMySql(t *testing.T) {
 	if err != nil {
 		t.Fatalf("打开 MySQL 失败: %v", err)
 	}
-	defer db.Close()
 
-	if err := PingMySQL(context.Background(), db); err != nil {
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("取出底层连接失败: %v", err)
+	}
+	defer sqlDB.Close()
+
+	if err := PingMySQL(context.Background(), sqlDB); err != nil {
 		t.Fatalf("ping MySQL 失败: %v", err)
 	}
 
-	t.Logf("MySQL 连接成功: %v", db.Stats())
+	t.Logf("MySQL 连接成功: %v", sqlDB.Stats())
 }

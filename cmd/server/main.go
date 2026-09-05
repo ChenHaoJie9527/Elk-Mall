@@ -10,6 +10,7 @@ import (
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/controller"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/model/do"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/router"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
@@ -24,12 +25,23 @@ func main() {
 
 	fmt.Printf("配置文件加载成功: %+v\n", cfg)
 
-	db, err := adaptor.OpenMySql(cfg.MySQL)
+	gdb, err := adaptor.OpenMySql(cfg.MySQL)
 	if err != nil {
 		log.Fatalf("连接 MySQL 失败: %v", err)
 	}
 
-	defer db.Close()
+	// 从 GORM 拿回原来的 *sql.DB
+	sqlDB, err := gdb.DB()
+	if err != nil {
+		log.Fatalf("取出 MySQL 连接失败: %v", err)
+	}
+	// Close 在 *sql.DB 上，*gorm.DB 没有这个方法
+	defer sqlDB.Close()
+
+	// 按 UserDO 建/补 users 表
+	if err := gdb.AutoMigrate(&do.UserDO{}); err != nil {
+		log.Fatalf("自动迁移失败: %v", err)
+	}
 
 	r, err := adaptor.OpenRedis(cfg.Redis)
 	if err != nil {
@@ -83,7 +95,7 @@ func main() {
 	}))
 
 	// 挂载 路由
-	router.Register(e, &controller.Health{MySQL: db, Redis: r})
+	router.Register(e, &controller.Health{MySQL: sqlDB, Redis: r})
 	// 启动服务
 	if err := e.Start(":" + cfg.Server.Port); err != nil {
 		log.Fatal("start server: ", err)

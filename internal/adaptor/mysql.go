@@ -6,7 +6,9 @@ import (
 	"fmt"
 
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/config"
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // 生成 MySQL DSN, 用于连接 MySQL 数据库
@@ -17,9 +19,9 @@ func MySqlDSN(cfg config.MySQLConfig) string {
 	)
 }
 
-// 建立连接池，设置池子大小，以及 ping 连接
-func OpenMySql(cfg config.MySQLConfig) (*sql.DB, error) {
-	db, err := sql.Open("mysql", MySqlDSN(cfg))
+// 建立连接池并套上 GORM：底层仍是 *sql.DB，返回 *gorm.DB 给仓储使用
+func OpenMySql(cfg config.MySQLConfig) (*gorm.DB, error) {
+	sqlDB, err := sql.Open("mysql", MySqlDSN(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("打开 MySQL 失败: %w", err)
 	}
@@ -34,23 +36,30 @@ func OpenMySql(cfg config.MySQLConfig) (*sql.DB, error) {
 		maxIdle = 5
 	}
 
-	db.SetMaxOpenConns(maxOpen)
-	db.SetMaxIdleConns(maxIdle)
+	sqlDB.SetMaxOpenConns(maxOpen)
+	sqlDB.SetMaxIdleConns(maxIdle)
 
 	// 检查连接是否正常
-	if err := PingMySQL(context.Background(), db); err != nil {
-		// 如果连接不正常，关闭连接，并返回错误
-		_ = db.Close()
+	if err := PingMySQL(context.Background(), sqlDB); err != nil {
+		_ = sqlDB.Close()
 		return nil, err
 	}
 
-	return db, nil
+	// 用现成的连接池套上 GORM，不再开第二条连接
+	isMySQL := mysql.New(mysql.Config{Conn: sqlDB})
+	gdb, err := gorm.Open(isMySQL, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info), // 打印 SQL 语句
+	})
+	if err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("打开 GORM 失败: %w", err)
+	}
 
+	return gdb, nil
 }
 
 // 检查 MySQL 连接是否正常, 返回 error
 func PingMySQL(ctx context.Context, db *sql.DB) error {
-	// 使用 context 检查连接是否正常
 	if err := db.PingContext(ctx); err != nil {
 		return fmt.Errorf("ping MySQL 失败: %w", err)
 	}
