@@ -18,8 +18,10 @@ func (e *Errno) WithMsg(msg string) *Errno {
 
 // 定义常用的 Errno
 var (
-	OK          = &Errno{Code: 0, Msg: "OK"}
-	ParmError   = &Errno{Code: 10001, Msg: "参数错误"}
-	NotFound    = &Errno{Code: 10002, Msg: "资源不存在"}
-	ServerError = &Errno{Code: 10003, Msg: "服务器内部错误"}
+	OK                      = &Errno{Code: 0, Msg: "OK"}
+	ParmError               = &Errno{Code: 10001, Msg: "参数错误"}
+	NotFound                = &Errno{Code: 10002, Msg: "资源不存在"}
+	ServerError             = &Errno{Code: 10003, Msg: "服务器内部错误"}
+	UsernameExists          = &Errno{Code: 10004, Msg: "用户名已存在"}
+	UsernameOrPasswordError = &Errno{Code: 10005, Msg: "用户名或密码错误"}
 )
