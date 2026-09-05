@@ -1,6 +1,6 @@
 # Elk-Mall
 
-Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0` / `v5.0.0`。
+Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0` / `v5.0.0` / `v6.0.0`。
 
 ## 已完成功能
 
@@ -45,13 +45,37 @@ Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` 
 - 引入 `gorm.io/gorm`；插入、按主键查、列表都走 GORM 链式调用，错误从 `.Error` 取出
 - 本版不挂用户 HTTP 接口、不改 `main` 接入 GORM、不 `AutoMigrate`；adaptor 仍只负责连上 `database/sql`
 
+### v6.0.0 — 用户链路：注册 / 登录 / 按 id 查询
+
+- `OpenMySql` 仍先建 `*sql.DB` 连接池，再套 `*gorm.DB`；`/ping` 用 `gdb.DB()` 取出的底层连接探活
+- 启动时 `AutoMigrate(&do.UserDO{})` 建/补表。结构体名是 `UserDO`，GORM 默认表名是 `user_dos`（不是 `users`），要改表名需在 DO 上写 `TableName()`
+- `internal/model/dto`：`RegisterReq` / `LoginReq` / `LoginResp` / `UserResp`；密码只进请求，不出现在响应
+- `UserService`：用户名查重、bcrypt 加密、登录校验、JWT（`config.yaml` 的 `jwt.secret`）；`ErrRecordNotFound` 不当成 500
+- 新增业务错误码：`UsernameExists` / `UsernameOrPasswordError` / `UserNotFound`；controller 把 `error` 交给全局 `HTTPErrorHandler`
+- 路由：`POST /users/register`、`POST /users/login`、`GET /users/:id`（本版查询不校验 token）
+- `main` 组装 `UserRepo` → `UserService` → `User` 控制器后挂路由；注册未传昵称时用用户名填充
+
 本地依赖：
 
 ```bash
 docker compose up -d
 ```
 
-应用仍在宿主机运行，连 `127.0.0.1:3308` 与 `127.0.0.1:6380`。Navicat 用同一套账号（`elk` / `elk`，端口 3308）**双击打开连接**。`docker compose down` 只拆容器、数据还在；`down -v` 会连数据卷一起删掉。
+应用仍在宿主机运行，连 `127.0.0.1:3308` 与 `127.0.0.1:6380`。Navicat 用同一套账号（`elk` / `elk`，端口 3308）**双击打开连接**，用户数据在 `user_dos`。`docker compose down` 只拆容器、数据还在；`down -v` 会连数据卷一起删掉。
+
+用户接口（v6）：
+
+```bash
+curl -s -X POST localhost:8080/users/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"elk","password":"123456"}'
+
+curl -s -X POST localhost:8080/users/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"elk","password":"123456"}'
+
+curl -s localhost:8080/users/1
+```
 
 ## 目录结构
 
@@ -59,13 +83,14 @@ docker compose up -d
 elk-mall/
 ├── cmd/server/main.go          # 入口：读配置、连 MySQL/Redis、建 Echo、挂中间件、注册路由、启动
 ├── internal/
-│   ├── adaptor/                # 数据接入：连接池 + Ping（v4）
-│   ├── config/                 # 配置加载
-│   ├── router/                 # 路由层
-│   ├── controller/             # 控制层（当前仅 health）
-│   ├── service/                # 服务层（后续模块）
+│   ├── adaptor/                # 数据接入：连接池 + Ping（v4）；GORM 包装（v6）
+│   ├── config/                 # 配置加载（含 jwt.secret）
+│   ├── router/                 # 路由层：/ping + 用户注册登录查询
+│   ├── controller/             # 控制层：health + user
+│   ├── service/                # 服务层：查重、加密、JWT（v6）
 │   ├── repository/             # 仓储：UserRepo 用户 CRUD（v5）
-│   ├── model/do/               # DO：UserDO 表映射（v5）；DTO 后续再加
+│   ├── model/do/               # DO：UserDO 表映射（v5）
+│   ├── model/dto/              # DTO：注册/登录请求与响应（v6）
 │   ├── middleware/             # 自定义中间件（后续）
 │   └── common/
 │       ├── Errno/              # 业务错误码（v2）
