@@ -48,7 +48,19 @@ func (u *UserRepo) GetList(page, pageSize int) ([]do.UserDO, int64, error) {
 	// Offset: 偏移量
 	// Limit: 限制条数
 	// Find: 查询结果
-	u.db.Offset((page - 1) * pageSize).Limit(pageSize).Find(&list)
+	if err := u.db.Offset((page - 1) * pageSize).Limit(pageSize).Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
 
 	return list, total, nil
+}
+
+// 更新用户
+func (u *UserRepo) UpdateUser(user *do.UserDO) error {
+	return u.db.Save(user).Error
+}
+
+// 删除用户
+func (u *UserRepo) DeleteUser(id uint) error {
+	return u.db.Delete(&do.UserDO{}, id).Error
 }
