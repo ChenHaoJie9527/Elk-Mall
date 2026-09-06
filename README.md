@@ -1,6 +1,6 @@
 # Elk-Mall
 
-Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0` / `v5.0.0` / `v6.0.0`。
+Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` / `v2.0.0` / `v3.0.0` / `v4.0.0` / `v5.0.0` / `v6.0.0` / `v7.0.0`。
 
 ## 已完成功能
 
@@ -52,18 +52,21 @@ Go + Echo 商城后端，按版本迭代基础设施。当前已发布 `v1.0.0` 
 - `internal/model/dto`：`RegisterReq` / `LoginReq` / `LoginResp` / `UserResp`；密码只进请求，不出现在响应
 - `UserService`：用户名查重、bcrypt 加密、登录校验、JWT（`config.yaml` 的 `jwt.secret`）；`ErrRecordNotFound` 不当成 500
 - 新增业务错误码：`UsernameExists` / `UsernameOrPasswordError` / `UserNotFound`；controller 把 `error` 交给全局 `HTTPErrorHandler`
-- 路由：`POST /users/register`、`POST /users/login`、`GET /users/:id`（本版查询不校验 token）
+- 路由：`POST /users/register`、`POST /users/login`、`GET /users/:id`（本版查询不校验 token；鉴权见 v7）
 - `main` 组装 `UserRepo` → `UserService` → `User` 控制器后挂路由；注册未传昵称时用用户名填充
 
-本地依赖：
+### v7.0.0 — JWT 鉴权：签发 / 解析 / 按 token 查自己
 
-```bash
-docker compose up -d
-```
+- `config.yaml` 增加 `jwt.expires_in`（如 `1h`），结构体字段用 `mapstructure:"expires_in"`；必须写时长字符串，写成数字会被当成纳秒
+- `internal/pkg`：自定义 `Claims{UserID, RegisteredClaims}`，`GenerateJWTToken` / `ParseJWTToken` 用 HS256；`sub` 不再塞数字，业务身份走 `uid`
+- 登录签发 token，过期时间来自配置；`UserService` 注入 `secret` 与 `expiresIn`
+- `internal/middleware` 封装官方 `echo-jwt`：`SigningKey` 与签发同一把密钥，`NewClaimsFunc` 返回 `*pkg.Claims`（官方默认是无类型的 `MapClaims`）
+- 路由拆公开 / 鉴权 Group：`/ping`、注册、登录公开；`GET /users/me`、`GET /users/:id` 走中间件
+- 缺 token / token 无效 → 401；`/users/:id` 的 path id 必须等于 token 里的 `UserID`，否则 403
+- `GET /users/me` 只信 token，不从 URL 取 id；controller 抽出 `currentUserID` 供两个接口复用
+- `/users/me` 必须注册在 `/users/:id` 前面，否则 `me` 会被当成 id
 
-应用仍在宿主机运行，连 `127.0.0.1:3308` 与 `127.0.0.1:6380`。Navicat 用同一套账号（`elk` / `elk`，端口 3308）**双击打开连接**，用户数据在 `user_dos`。`docker compose down` 只拆容器、数据还在；`down -v` 会连数据卷一起删掉。
-
-用户接口（v6）：
+用户接口（v6 公开 + v7 需 Bearer）：
 
 ```bash
 curl -s -X POST localhost:8080/users/register \
@@ -74,8 +77,22 @@ curl -s -X POST localhost:8080/users/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"elk","password":"123456"}'
 
-curl -s localhost:8080/users/1
+# 把登录返回的 token 填进 Authorization
+curl -i localhost:8080/users/me \
+  -H "Authorization: Bearer <token>"
+
+# 查自己 → 200；查别人 → 403；不带 token → 401
+curl -i localhost:8080/users/1 \
+  -H "Authorization: Bearer <token>"
 ```
+
+本地依赖：
+
+```bash
+docker compose up -d
+```
+
+应用仍在宿主机运行，连 `127.0.0.1:3308` 与 `127.0.0.1:6380`。Navicat 用同一套账号（`elk` / `elk`，端口 3308）**双击打开连接**，用户数据在 `user_dos`。`docker compose down` 只拆容器、数据还在；`down -v` 会连数据卷一起删掉。
 
 ## 目录结构
 
@@ -84,14 +101,15 @@ elk-mall/
 ├── cmd/server/main.go          # 入口：读配置、连 MySQL/Redis、建 Echo、挂中间件、注册路由、启动
 ├── internal/
 │   ├── adaptor/                # 数据接入：连接池 + Ping（v4）；GORM 包装（v6）
-│   ├── config/                 # 配置加载（含 jwt.secret）
-│   ├── router/                 # 路由层：/ping + 用户注册登录查询
-│   ├── controller/             # 控制层：health + user
-│   ├── service/                # 服务层：查重、加密、JWT（v6）
+│   ├── config/                 # 配置加载（jwt.secret / jwt.expires_in）
+│   ├── router/                 # 路由层：公开接口 + JWT Group
+│   ├── controller/             # 控制层：health + user（含 /users/me）
+│   ├── service/                # 服务层：查重、加密、签发 JWT
 │   ├── repository/             # 仓储：UserRepo 用户 CRUD（v5）
 │   ├── model/do/               # DO：UserDO 表映射（v5）
 │   ├── model/dto/              # DTO：注册/登录请求与响应（v6）
-│   ├── middleware/             # 自定义中间件（后续）
+│   ├── middleware/             # JWT 鉴权（echo-jwt，v7）
+│   ├── pkg/                    # JWT 签发 / 解析（v7）
 │   └── common/
 │       ├── Errno/              # 业务错误码（v2）
 │       └── response/           # 统一响应 + 全局错误处理
