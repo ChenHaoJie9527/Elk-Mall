@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	errno "github.com/ChenHaoJie9527/Elk-Mall/internal/common/Errno"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/constants"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/model/dto"
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/pkg"
@@ -120,7 +121,7 @@ func (u *User) Me(c *echo.Context) error {
 }
 
 func currentUserID(c *echo.Context) (uint, error) {
-	token, err := echo.ContextGet[*jwt.Token](c, "user")
+	token, err := echo.ContextGet[*jwt.Token](c, constants.JWTContextKey)
 	if err != nil {
 		return 0, echo.ErrUnauthorized.Wrap(err)
 	}
