@@ -25,4 +25,5 @@ var (
 	UsernameExists          = &Errno{Code: 10004, Msg: "用户名已存在"}
 	UsernameOrPasswordError = &Errno{Code: 10005, Msg: "用户名或密码错误"}
 	UserNotFound            = &Errno{Code: 10006, Msg: "用户不存在"}
+	TokenExpired            = &Errno{Code: 10007, Msg: "Token 已过期"}
 )

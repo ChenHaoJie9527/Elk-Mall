@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	errno "github.com/ChenHaoJie9527/Elk-Mall/internal/common/Errno"
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v5"
 	"github.com/labstack/echo/v5"
 )
 
@@ -77,6 +79,27 @@ func TestHTTPErrorHandler_Errno(t *testing.T) {
 				t.Errorf("data = %v, want nil", body.Data)
 			}
 		})
+	}
+}
+
+func TestHTTPErrorHandler_JWTExpired(t *testing.T) {
+	// 模拟 echo-jwt 过期时的 wrap 链：ErrJWTInvalid → TokenParsingError → TokenError → jwt.ErrTokenExpired
+	err := echojwt.ErrJWTInvalid.Wrap(&echojwt.TokenParsingError{
+		Err: &echojwt.TokenError{Err: jwt.ErrTokenExpired},
+	})
+
+	c, rec := newCtx()
+	HTTPErrorHandler(c, err)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("HTTP = %d, want 401", rec.Code)
+	}
+	body := decodeBody(t, rec)
+	if body.Code != http.StatusUnauthorized {
+		t.Errorf("code = %d, want 401", body.Code)
+	}
+	if body.Msg != "已过期" {
+		t.Errorf("msg = %q, want %q", body.Msg, "已过期")
 	}
 }
 
