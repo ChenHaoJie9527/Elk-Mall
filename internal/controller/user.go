@@ -66,7 +66,6 @@ func (u *User) Login(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
-
 	return c.JSON(http.StatusOK, response.Success(resp))
 }
 

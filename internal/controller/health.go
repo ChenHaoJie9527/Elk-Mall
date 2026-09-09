@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ChenHaoJie9527/Elk-Mall/internal/common/response"
+	"github.com/ChenHaoJie9527/Elk-Mall/internal/logger"
 	"github.com/labstack/echo/v5"
 	"github.com/redis/go-redis/v9"
 )
@@ -24,6 +25,9 @@ func (h *Health) Ping(c *echo.Context) error {
 	if err := h.Redis.Ping(c.Request().Context()).Err(); err != nil {
 		return err
 	}
+
+	logger.Info("ping ok")
+
 	// 返回成功响应
 	return c.JSON(http.StatusOK, response.Success(map[string]string{
 		"mysql": "ok",
