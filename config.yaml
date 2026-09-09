@@ -2,6 +2,12 @@ app:
   name: elk-mall
 server:
   port: 8080
+  log_level: debug # debug / info / warn / error
+  env: prod # local -> 开发环境；prod -> 生产环境
+  log_max_size_mb: 100 # 日志文件最大大小，单位：MB
+  log_max_backups: 3 # 日志文件最大备份数
+  log_max_age_days: 28 # 日志文件最大保存天数
+  log_file: ./logs/server.log # 存储日志文件路径
 mysql:
   host: 127.0.0.1
   port: "3308"
