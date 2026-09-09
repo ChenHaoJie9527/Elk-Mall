@@ -1,26 +1,30 @@
 app:
   name: elk-mall
+  version: 1.0.0
+
 server:
-  port: 8080
+  http_port: 8080
   log_level: debug # debug / info / warn / error
   env: prod # local -> 开发环境；prod -> 生产环境
-  log_max_size_mb: 100 # 日志文件最大大小，单位：MB
-  log_max_backups: 3 # 日志文件最大备份数
-  log_max_age_days: 28 # 日志文件最大保存天数
-  log_file: ./logs/server.log # 存储日志文件路径
+  enable_pprof: false # 是否启用 pprof
+
 mysql:
-  host: 127.0.0.1
-  port: "3308"
-  user: elk
-  password: elk
-  database: elk_mall
-  max_open_conns: 10 # 连接池最大连接数
-  max_idle_conns: 5 # 连接池最大空闲连接数
+  dialect: mysql # mysql / sqlite3 / postgres
+  user: root # 用户名
+  password: root # 密码
+  host: 127.0.0.1 # 主机
+  port: 3306 # 端口
+  database: elk_mall # 数据库
+  charset: utf8mb4 # 字符集
+  show_sql: true # 是否显示 SQL
+  max_open: 100 # 最大连接数
+  max_idle: 10 # 最大空闲连接数
+
 redis:
-  addr: 127.0.0.1:6380
+  addr: 127.0.0.1:6380 # 地址
   password: "" # 密码
   db: 0 # 数据库索引
-jwt:
-  secret: elk-mall-dev-jwt-secret # 生产环境务必替换
-  expires_in: 1h # 过期时间
+  max_idle: 10 # 最大空闲连接数
+  max_open: 100 # 最大连接数
+
   
