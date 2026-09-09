@@ -2,19 +2,36 @@ package errno
 
 // 定义 Errno 类型
 type Errno struct {
-	Code int
-	Msg  string
+	Code   int
+	Msg    string
+	ErrMsg string
 }
 
 func (e *Errno) Error() string { return e.Msg }
 
-// WithMsg 返回一个带有自定义消息的 Errno
-func (e *Errno) WithMsg(msg string) *Errno {
-	return &Errno{
-		Code: e.Code,
-		Msg:  msg,
-	}
+func (e *Errno) clone() *Errno {
+	cp := *e
+	return &cp
 }
+
+// WithMsg 只改文案、保持原 Code，返回副本，不修改全局 Errno。
+func (e *Errno) WithMsg(msg string) *Errno {
+	cp := e.clone()
+	cp.Msg = msg
+	return cp
+}
+
+// WithErrMsg 把底层错误写进 ErrMsg，返回副本，不修改全局 Errno。
+func (e *Errno) WithErrMsg(rawErr error) *Errno {
+	cp := e.clone()
+	if rawErr != nil {
+		cp.ErrMsg = rawErr.Error()
+	}
+	return cp
+}
+
+// IsOK 判断 Errno 是否是 OK
+func (e *Errno) IsOK() bool { return e.Code == 200 }
 
 // 定义常用的 Errno
 var (

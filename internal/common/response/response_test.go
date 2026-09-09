@@ -2,6 +2,8 @@ package response
 
 import (
 	"encoding/json"
+	"net/http"
+	"strings"
 	"testing"
 
 	errno "github.com/ChenHaoJie9527/Elk-Mall/internal/common/Errno"
@@ -56,5 +58,40 @@ func TestErr_JSONShape(t *testing.T) {
 	want := `{"code":10002,"msg":"资源不存在","data":null}`
 	if string(data) != want {
 		t.Errorf("expected %s, got %s", want, string(data))
+	}
+}
+
+func TestWriteResponse_SuccessEnvelope(t *testing.T) {
+	c, rec := newCtx()
+	data := map[string]string{"mysql": "ok", "redis": "ok"}
+	if err := WriteResponse(c, data, errno.OK); err != nil {
+		t.Fatal(err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("HTTP = %d, want 200", rec.Code)
+	}
+	body := decodeBody(t, rec)
+	if body.Code != 0 {
+		t.Errorf("code = %d, want 0", body.Code)
+	}
+	if body.Msg != "OK" {
+		t.Errorf("msg = %q, want OK", body.Msg)
+	}
+	if strings.Contains(rec.Body.String(), "err_msg") {
+		t.Errorf("empty err_msg should be omitted, got %s", rec.Body.String())
+	}
+}
+
+func TestWriteResponse_WithMsgReplacesNotConcatenates(t *testing.T) {
+	c, rec := newCtx()
+	if err := WriteResponse(c, nil, errno.OK.WithMsg("ping ok")); err != nil {
+		t.Fatal(err)
+	}
+	body := decodeBody(t, rec)
+	if body.Msg != "ping ok" {
+		t.Errorf("msg = %q, want ping ok", body.Msg)
+	}
+	if errno.OK.Msg != "OK" {
+		t.Errorf("mutated OK.Msg = %q", errno.OK.Msg)
 	}
 }

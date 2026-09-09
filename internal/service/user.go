@@ -78,16 +78,6 @@ func (s *UserService) Login(req *dto.LoginReq) (*dto.LoginResp, error) {
 		return nil, errno.UsernameOrPasswordError
 	}
 
-	// 生成 token：NewWithClaims 只是组装未签名的 JWT，SignedString 才会用密钥签出字符串
-	// now := time.Now()
-	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-	// 	"sub": u.ID,                           // 用户ID
-	// 	"exp": now.Add(time.Hour * 24).Unix(), // 过期时间:1天
-	// 	"iat": now.Unix(),                     // 签发时间
-	// 	"nbf": now.Unix(),                     // 生效时间
-	// 	"jti": uuid.New().String(),            // 唯一标识
-	// })
-
 	// 使用 JWT 密钥签出字符串
 	tokenString, err := pkg.GenerateJWTToken(u.ID, s.jwtSecret, s.expiresIn)
 	if err != nil {

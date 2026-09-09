@@ -23,11 +23,6 @@ func GenerateJWTToken(userID uint, jwtSecret []byte, expiresIn time.Duration) (s
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		// "sub": userID,                    // 用户ID
-		// "exp": now.Add(expiresIn).Unix(), // 过期时间:1天
-		// "iat": now.Unix(),                // 签发时间
-		// "nbf": now.Unix(),                // 生效时间
-		// "jti": uuid.New().String(),       // 唯一标识
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(expiresIn)), // 过期时间

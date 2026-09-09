@@ -98,8 +98,8 @@ func TestHTTPErrorHandler_JWTExpired(t *testing.T) {
 	if body.Code != http.StatusUnauthorized {
 		t.Errorf("code = %d, want 401", body.Code)
 	}
-	if body.Msg != "已过期" {
-		t.Errorf("msg = %q, want %q", body.Msg, "已过期")
+	if body.Msg != errno.TokenExpired.Msg {
+		t.Errorf("msg = %q, want %q", body.Msg, errno.TokenExpired.Msg)
 	}
 }
 
