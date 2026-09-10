@@ -4,10 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/util/gconv"
 	"github.com/spf13/viper"
+	_ "github.com/spf13/viper/remote"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -30,7 +32,7 @@ type Config struct {
 }
 
 type Server struct {
-	http_port   int    `yaml:"http_port"`
+	HttpPort    int    `yaml:"http_port"`
 	Env         string `yaml:"env"`
 	EnablePprof bool   `yaml:"enable_pprof"`
 	LogLevel    string `yaml:"log_level"`
@@ -64,10 +66,10 @@ type Redis struct {
 	MaxOpen int    `yaml:"max_open"`
 }
 
-// 注册 -c（默认 mall_local.yml）和 -r（etcd，默认读 ETCD_ADDR）
+// 注册 -c（本地 yaml）和 -r（etcd 地址，默认读 ETCD_ADDR）
 func init() {
-	flag.StringVar(&localConfigPath, "c", ServerName+"_config.yaml", "default config path")
-	flag.StringVar(&etcdAddr, "r", os.Getenv("ETCD_ADDR"), "default etcd address")
+	flag.StringVar(&localConfigPath, "c", ServerName+"_config.yaml", "local yaml config path")
+	flag.StringVar(&etcdAddr, "r", os.Getenv("ETCD_ADDR"), "etcd endpoint, e.g. http://127.0.0.1:2379")
 }
 
 func InitConfig() *Config {
@@ -102,51 +104,66 @@ func InitConfig() *Config {
 // 当 存在 etcd时，从 etcd 读取配置，并监听配置变化
 func getFromRemoteAndWatchUpdate(v *viper.Viper) (*Config, error) {
 	tempConf := Config{}
-	// 添加 etcd 远程提供者
-	if err := v.AddRemoteProvider("etcd3", etcdKey, etcdAddr); err != nil {
+	if err := prepareRemoteConfig(v, etcdAddr); err != nil {
 		return nil, err
 	}
 
-	// 读取配置
 	if err := v.ReadRemoteConfig(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read etcd config (endpoint=%s, key=%s): %w", etcdAddr, etcdKey, err)
 	}
 
-	// 将配置反序列化到 tempConf
 	if err := v.Unmarshal(&tempConf); err != nil {
 		return nil, err
 	}
 
-	// 监听配置变化
 	go func() {
 		for {
-			// 每隔 1 分钟 监听一次配置变化
-			time.Sleep(time.Minute * 1)
+			time.Sleep(time.Minute)
 			if err := v.WatchRemoteConfig(); err != nil {
-				v.Unmarshal(&GlobalConfig)
-				// 将配置转换为字符串并打印
-				fmt.Println(">>> etcd config hot-reloaded: ", gconv.String(GlobalConfig))
+				continue
 			}
+			if err := v.Unmarshal(&GlobalConfig); err != nil {
+				continue
+			}
+			fmt.Println(">>> etcd config hot-reloaded: ", gconv.String(GlobalConfig))
 		}
 	}()
 
 	return &tempConf, nil
+}
 
+// AddRemoteProvider 参数顺序是 provider, endpoint, path。
+// etcd 的 endpoint 必须是 http://ip:port，不能把配置 key 或本地 yaml 路径当成地址。
+func prepareRemoteConfig(v *viper.Viper, endpoint string) error {
+	if looksLikeConfigFile(endpoint) {
+		return fmt.Errorf("-r 需要 etcd 地址（例如 http://127.0.0.1:2379），本地配置请使用 -c %s", endpoint)
+	}
+	v.SetConfigType("yaml")
+	return v.AddRemoteProvider("etcd3", normalizeEtcdEndpoint(endpoint), etcdKey)
+}
+
+func looksLikeConfigFile(s string) bool {
+	lower := strings.ToLower(s)
+	return strings.HasSuffix(lower, ".yaml") || strings.HasSuffix(lower, ".yml") ||
+		strings.HasSuffix(lower, ".json") || strings.HasSuffix(lower, ".toml")
+}
+
+func normalizeEtcdEndpoint(addr string) string {
+	if strings.Contains(addr, "://") {
+		return addr
+	}
+	return "http://" + addr
 }
 
 // 当 不存在 etcd时，从本地文件读取配置
 func getFromLocal() (*Config, error) {
 	tempConf := Config{}
-	// 如果本地配置文件存在，则读取配置文件
-	if _, err := os.Stat(localConfigPath); err == nil {
-		content, err := os.ReadFile(localConfigPath)
-		if err != nil {
-			return nil, err
-		}
-		err = yaml.Unmarshal(content, &tempConf)
-		if err != nil {
-			return nil, err
-		}
+	content, err := os.ReadFile(localConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("local config file not found: %s", localConfigPath)
+	}
+	if err = yaml.Unmarshal(content, &tempConf); err != nil {
+		return nil, err
 	}
 	return &tempConf, nil
 }

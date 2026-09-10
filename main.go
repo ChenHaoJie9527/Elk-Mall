@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/ChenHaoJie9527/Elk-Mall/adaptor"
 	"github.com/ChenHaoJie9527/Elk-Mall/config"
+	"github.com/ChenHaoJie9527/Elk-Mall/router"
 	"github.com/ChenHaoJie9527/Elk-Mall/utils/logger"
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
@@ -16,18 +19,39 @@ func main() {
 	conf := config.InitConfig()
 	logger.SetLevel(conf.Server.LogLevel)
 
-	_, err := initMySQL(&conf.MySQL)
+	db, err := initMySQL(&conf.MySQL)
 	handleErr(err)
 	logger.Debug("mysql connected successfully")
 
-	_, err = initRedis(&conf.Redis)
+	redis, err := initRedis(&conf.Redis)
 	handleErr(err)
 	logger.Debug("redis connected successfully")
 
-	startServer(conf)
+	startServer(conf, db, redis)
 }
 
-func startServer(conf *config.Config) {
+func startServer(conf *config.Config, db *gorm.DB, redis *redis.Client) {
+
+	// 将 Adaptor + 健康检查闭包 传递给 router 层，得到一个 Router 实例
+	isRouter := router.NewRouter(conf, adaptor.NewAdaptor(conf, db, redis), func() error {
+		err := func() error {
+			pingDb, err := db.DB()
+			handleErr(err)
+			return pingDb.Ping()
+		}()
+		if err != nil {
+			return errors.New("mysql connect failed")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		return redis.Ping(ctx).Err()
+
+	})
+
+	app := router.NewApp(conf.Server.HttpPort, isRouter)
+	app.Run()
 
 }
 
