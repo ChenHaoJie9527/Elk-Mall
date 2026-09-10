@@ -1,9 +1,11 @@
 package router
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/ChenHaoJie9527/Elk-Mall/adaptor"
+	"github.com/ChenHaoJie9527/Elk-Mall/common"
 	"github.com/ChenHaoJie9527/Elk-Mall/config"
 	"github.com/gin-gonic/gin"
 )
@@ -34,16 +36,16 @@ func NewRouter(conf *config.Config, adaptor *adaptor.Adaptor, checkFunc func() e
 
 // 注册业务路由
 func (r *Router) Register(app *gin.Engine) {
-	// TODO: pprof 路由
+
+	// --------------------- pprof 路由 / ping 路由 （ 用于检查服务是否正常 ） ---------------------
 	if r.conf.Server.EnablePprof {
 		SetupPprof(app, "/debug/pprof")
 	}
-
 	app.Any("/ping", r.checkServer())
 
+	// --------------------- 业务路由 （实际业务路由，对外暴露的接口） ---------------------
 	// 创建根路由组
 	root := createGroup(r.rootPath, app)
-
 	// 注册路由
 	r.route(root)
 }
@@ -79,7 +81,16 @@ func (r *Router) route(root *gin.RouterGroup) {
 }
 
 // 注册客户路由
-func (r *Router) customerRoute(root *gin.RouterGroup) {}
+func (r *Router) customerRoute(root *gin.RouterGroup) {
+	// 用户侧路由： /api/mall/customer
+	// 中间件：AuthMiddleware 用于验证用户 token
+	cstRoot := root.Group("/customer", AuthMiddleware(r.SpanFilter, func(ctx context.Context, token string) (*common.User, error) {
+		return &common.User{}, nil
+	}))
+
+	// Any: 处理所有请求方法
+	// cstRoot.Any("/user/info", r.admin.UserInfo)
+}
 
 // 注册管理员路由
 func (r *Router) adminRoute(root *gin.RouterGroup) {}
