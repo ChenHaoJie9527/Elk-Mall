@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
+	"time"
+
 	"github.com/ChenHaoJie9527/Elk-Mall/config"
 	"github.com/ChenHaoJie9527/Elk-Mall/utils/logger"
+	"github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,6 +19,10 @@ func main() {
 	_, err := initMySQL(&conf.MySQL)
 	handleErr(err)
 	logger.Debug("mysql connected successfully")
+
+	_, err = initRedis(&conf.Redis)
+	handleErr(err)
+	logger.Debug("redis connected successfully")
 
 }
 
@@ -47,6 +55,25 @@ func initMySQL(conf *config.MySQL) (*gorm.DB, error) {
 	sqlDB.SetMaxOpenConns(conf.MaxOpen)
 
 	return db, nil
+}
+
+func initRedis(conf *config.Redis) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:         conf.Addr,
+		Password:     conf.PWD,
+		DB:           conf.DBIndex,
+		MaxIdleConns: conf.MaxIdle,
+		PoolSize:     conf.MaxOpen,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 func handleErr(err error) {
