@@ -24,6 +24,11 @@ func main() {
 	handleErr(err)
 	logger.Debug("redis connected successfully")
 
+	startServer(conf)
+}
+
+func startServer(conf *config.Config) {
+
 }
 
 // 初始化 MySQL 数据库连接
