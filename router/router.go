@@ -35,9 +35,9 @@ func NewRouter(conf *config.Config, adaptor *adaptor.Adaptor, checkFunc func() e
 // 注册业务路由
 func (r *Router) Register(app *gin.Engine) {
 	// TODO: pprof 路由
-	// if r.conf.Server.EnablePprof {
-	// 	SetupPprof(app, "/debug/pprof")
-	// }
+	if r.conf.Server.EnablePprof {
+		SetupPprof(app, "/debug/pprof")
+	}
 
 	app.Any("/ping", r.checkServer())
 
